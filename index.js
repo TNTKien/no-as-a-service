@@ -1,35 +1,35 @@
-const express = require('express');
-const cors = require("cors");
-const rateLimit = require('express-rate-limit');
-const fs = require('fs');
+import reasons from './reasons.json';
 
-const app = express();
-app.use(cors());
-app.set('trust proxy', true);
-const PORT = process.env.PORT || 3000;
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
 
-// Load reasons from JSON
-const reasons = JSON.parse(fs.readFileSync('./reasons.json', 'utf-8'));
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
 
-// Rate limiter: 120 requests per minute per IP
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 120,
-  keyGenerator: (req, res) => {
-    return req.headers['cf-connecting-ip'] || req.ip; // Fallback if header missing (or for non-CF)
+    if (url.pathname === '/no') {
+      const reason = reasons[Math.floor(Math.random() * reasons.length)];
+      return new Response(JSON.stringify({ reason }), {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Not found' }), {
+      status: 404,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   },
-  message: { error: "Too many requests, please try again later. (120 reqs/min/IP)" }
-});
-
-app.use(limiter);
-
-// Random rejection reason endpoint
-app.get('/no', (req, res) => {
-  const reason = reasons[Math.floor(Math.random() * reasons.length)];
-  res.json({ reason });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`No-as-a-Service is running on port ${PORT}`);
-});
+};
