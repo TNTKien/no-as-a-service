@@ -14,7 +14,7 @@ export default {
       });
     }
 
-    if (url.pathname === '/no') {
+    if (url.pathname === '/' || url.pathname === '/no') {
       const reason = reasons[Math.floor(Math.random() * reasons.length)];
       return new Response(JSON.stringify({ reason }), {
         headers: {
